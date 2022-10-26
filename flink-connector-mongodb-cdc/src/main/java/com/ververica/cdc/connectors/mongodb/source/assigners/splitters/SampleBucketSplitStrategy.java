@@ -36,13 +36,13 @@ import java.util.Map;
 
 import static com.mongodb.client.model.Aggregates.bucketAuto;
 import static com.mongodb.client.model.Aggregates.sample;
-import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.BSON_MAX_KEY;
-import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.BSON_MIN_KEY;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.ID_FIELD;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.MAX_FIELD;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.MIN_FIELD;
 import static com.ververica.cdc.connectors.mongodb.source.dialect.MongoDBDialect.collectionSchema;
-import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.boundOf;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.boundOfId;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.maxUpperBoundOfId;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.minLowerBoundOfId;
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.collectionFor;
 
 /**
@@ -121,8 +121,8 @@ public class SampleBucketSplitStrategy implements SplitStrategy {
                         collectionId,
                         splitId(collectionId, 0),
                         rowType,
-                        boundOf(ID_FIELD, BSON_MIN_KEY),
-                        boundOf(ID_FIELD, lowerBoundOfBucket(chunks.get(0))),
+                        minLowerBoundOfId(),
+                        boundOfId(lowerBoundOfBucket(chunks.get(0))),
                         null,
                         schema);
         snapshotSplits.add(firstSplit);
@@ -134,8 +134,8 @@ public class SampleBucketSplitStrategy implements SplitStrategy {
                             collectionId,
                             splitId(collectionId, i + 1),
                             rowType,
-                            boundOf(ID_FIELD, lowerBoundOfBucket(bucket)),
-                            boundOf(ID_FIELD, upperBoundOfBucket(bucket)),
+                            boundOfId(lowerBoundOfBucket(bucket)),
+                            boundOfId(upperBoundOfBucket(bucket)),
                             null,
                             schema));
         }
@@ -145,8 +145,8 @@ public class SampleBucketSplitStrategy implements SplitStrategy {
                         collectionId,
                         splitId(collectionId, chunks.size() + 1),
                         rowType,
-                        boundOf(ID_FIELD, upperBoundOfBucket(chunks.get(chunks.size() - 1))),
-                        boundOf(ID_FIELD, BSON_MAX_KEY),
+                        boundOfId(upperBoundOfBucket(chunks.get(chunks.size() - 1))),
+                        maxUpperBoundOfId(),
                         null,
                         schema);
         snapshotSplits.add(lastSplit);

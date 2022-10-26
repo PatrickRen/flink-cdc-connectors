@@ -146,7 +146,6 @@ public class MongoDBSnapshotSplitReaderTest extends MongoDBSourceTestBase {
                         }
                     }
                 } else if (snapshotSplits.isEmpty() && snapshotSplitReader.canAssignNextSplit()) {
-                    //                    snapshotSplitReader.close();
                     break;
                 } // else continue to fetch records
             }

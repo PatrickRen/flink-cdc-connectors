@@ -20,6 +20,8 @@ import com.mongodb.kafka.connect.source.json.formatter.DefaultJson;
 import com.mongodb.kafka.connect.source.schema.AvroSchema;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
 import org.bson.BsonMaxKey;
 import org.bson.BsonMinKey;
 import org.bson.BsonValue;
@@ -127,6 +129,8 @@ public class MongoDBEnvelope {
 
     public static final JsonWriterSettings JSON_WRITER_SETTINGS_STRICT =
             new DefaultJson().getJsonWriterSettings();
+
+    public static final BsonDocument ID_INDEX = new BsonDocument(ID_FIELD, new BsonInt32(1));
 
     public static final BsonValue BSON_MIN_KEY = new BsonMinKey();
 

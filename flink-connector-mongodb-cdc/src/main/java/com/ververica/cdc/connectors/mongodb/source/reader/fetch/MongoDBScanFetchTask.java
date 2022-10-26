@@ -29,7 +29,6 @@ import com.ververica.cdc.connectors.mongodb.source.offset.ChangeStreamOffset;
 import io.debezium.relational.TableId;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.bson.BsonDocument;
-import org.bson.BsonInt32;
 import org.bson.BsonInt64;
 import org.bson.BsonString;
 import org.bson.RawBsonDocument;
@@ -85,19 +84,14 @@ public class MongoDBScanFetchTask implements FetchTask<SourceSplitBase> {
             MongoCollection<RawBsonDocument> collection =
                     collectionFor(mongoClient, collectionId, RawBsonDocument.class);
 
-            BsonDocument shardKeys = new BsonDocument();
-            for (String splitKey : snapshotSplit.getSplitKeyType().getFieldNames()) {
-                shardKeys.put(splitKey, new BsonInt32(1));
-            }
-
             // Using min and max operation to perform a specific index scan
             // See: https://www.mongodb.com/docs/manual/reference/method/cursor.min/
             cursor =
                     collection
                             .find()
-                            .min((BsonDocument) snapshotSplit.getSplitStart()[0])
-                            .max((BsonDocument) snapshotSplit.getSplitEnd()[0])
-                            .hint(shardKeys)
+                            .min((BsonDocument) snapshotSplit.getSplitStart()[1])
+                            .max((BsonDocument) snapshotSplit.getSplitEnd()[1])
+                            .hint((BsonDocument) snapshotSplit.getSplitStart()[0])
                             .batchSize(sourceConfig.getBatchSize())
                             .noCursorTimeout(true)
                             .cursor();

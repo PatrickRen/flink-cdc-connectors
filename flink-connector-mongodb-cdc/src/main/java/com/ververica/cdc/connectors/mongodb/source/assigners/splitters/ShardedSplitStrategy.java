@@ -94,7 +94,9 @@ public class ShardedSplitStrategy implements SplitStrategy {
             return SampleBucketSplitStrategy.INSTANCE.split(splitContext);
         }
 
-        RowType rowType = shardKeysToRowType(collectionMetadata.getDocument(KEY_FIELD));
+        BsonDocument splitKeys = collectionMetadata.getDocument(KEY_FIELD);
+        RowType rowType = shardKeysToRowType(splitKeys);
+
         Map<TableId, TableChanges.TableChange> schema = new HashMap<>();
         schema.put(collectionId, collectionSchema(collectionId));
 
@@ -106,8 +108,8 @@ public class ShardedSplitStrategy implements SplitStrategy {
                             collectionId,
                             splitId(collectionId, i),
                             rowType,
-                            new Object[] {chunk.getDocument(MIN_FIELD)},
-                            new Object[] {chunk.getDocument(MAX_FIELD)},
+                            new Object[] {splitKeys, chunk.getDocument(MIN_FIELD)},
+                            new Object[] {splitKeys, chunk.getDocument(MAX_FIELD)},
                             null,
                             schema));
         }

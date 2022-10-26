@@ -43,8 +43,8 @@ import java.util.Map;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.BSON_MIN_KEY;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.ID_FIELD;
 import static com.ververica.cdc.connectors.mongodb.source.dialect.MongoDBDialect.collectionSchema;
-import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.boundOf;
-import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.maxUpperBound;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.boundOfId;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.maxUpperBoundOfId;
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.UNAUTHORIZED_ERROR;
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.splitVector;
 
@@ -124,8 +124,8 @@ public class SplitVectorSplitStrategy implements SplitStrategy {
                             collectionId,
                             splitId(collectionId, i),
                             rowType,
-                            boundOf(ID_FIELD, lowerValue),
-                            boundOf(ID_FIELD, splitKeyValue),
+                            boundOfId(lowerValue),
+                            boundOfId(splitKeyValue),
                             null,
                             schema));
             lowerValue = splitKeyValue;
@@ -136,8 +136,8 @@ public class SplitVectorSplitStrategy implements SplitStrategy {
                         collectionId,
                         splitId(collectionId, splitKeys.size()),
                         rowType,
-                        boundOf(ID_FIELD, lowerValue),
-                        maxUpperBound(ID_FIELD),
+                        boundOfId(lowerValue),
+                        maxUpperBoundOfId(),
                         null,
                         schema);
         snapshotSplits.add(lastSplit);

@@ -13,8 +13,8 @@
 
 sh.enableSharding(db.getName());
 
-db.getCollection('shopping_cart').createIndex({ "user_id": 1, "product_no": 1, "product_kind": 1 }, { "unique": true });
-sh.shardCollection(db.getName() + ".shopping_cart", { "user_id": 1, "product_no": 1, "product_kind": 1});
+db.getCollection('shopping_cart').createIndex({ "user_id": 1, "product_no": -1, "product_kind": 1 }, { "unique": true });
+sh.shardCollection(db.getName() + ".shopping_cart", { "user_id": 1, "product_no": -1, "product_kind": 1});
 
 var shoppingCarts = [];
 for (var i = 1; i <= 20480; i++) {

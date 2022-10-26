@@ -21,21 +21,23 @@ import org.bson.BsonValue;
 
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.BSON_MAX_KEY;
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.BSON_MIN_KEY;
+import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.ID_FIELD;
+import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.ID_INDEX;
 
 /** Utilities to split chunks of collection. */
 public class ChunkUtils {
 
     private ChunkUtils() {}
 
-    public static Object[] boundOf(String splitKey, BsonValue bound) {
-        return new Object[] {new BsonDocument(splitKey, bound)};
+    public static Object[] boundOfId(BsonValue bound) {
+        return new Object[] {ID_INDEX, new BsonDocument(ID_FIELD, bound)};
     }
 
-    public static Object[] minLowerBound(String splitKey) {
-        return boundOf(splitKey, BSON_MIN_KEY);
+    public static Object[] minLowerBoundOfId() {
+        return boundOfId(BSON_MIN_KEY);
     }
 
-    public static Object[] maxUpperBound(String splitKey) {
-        return boundOf(splitKey, BSON_MAX_KEY);
+    public static Object[] maxUpperBoundOfId() {
+        return boundOfId(BSON_MAX_KEY);
     }
 }

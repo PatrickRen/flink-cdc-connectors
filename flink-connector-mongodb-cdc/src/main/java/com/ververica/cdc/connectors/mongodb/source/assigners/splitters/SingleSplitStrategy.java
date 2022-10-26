@@ -28,8 +28,8 @@ import java.util.Map;
 
 import static com.ververica.cdc.connectors.mongodb.internal.MongoDBEnvelope.ID_FIELD;
 import static com.ververica.cdc.connectors.mongodb.source.dialect.MongoDBDialect.collectionSchema;
-import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.maxUpperBound;
-import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.minLowerBound;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.maxUpperBoundOfId;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ChunkUtils.minLowerBoundOfId;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
@@ -56,8 +56,8 @@ public class SingleSplitStrategy implements SplitStrategy {
                         collectionId,
                         splitId(collectionId, 0),
                         shardKeysToRowType(singleton(ID_FIELD)),
-                        minLowerBound(ID_FIELD),
-                        maxUpperBound(ID_FIELD),
+                        minLowerBoundOfId(),
+                        maxUpperBoundOfId(),
                         null,
                         schema);
 
