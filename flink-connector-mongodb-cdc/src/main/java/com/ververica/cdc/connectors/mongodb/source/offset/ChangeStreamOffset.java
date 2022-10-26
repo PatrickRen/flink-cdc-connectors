@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.maximumBsonTimestamp;
+import static com.ververica.cdc.connectors.mongodb.source.utils.ResumeTokenUtils.decodeTimestamp;
+
 /**
  * A structure describes a fine grained offset in a change log event including resumeToken and
  * clusterTime.
@@ -37,25 +40,33 @@ public class ChangeStreamOffset extends Offset {
 
     public static final String RESUME_TOKEN_FIELD = "resumeToken";
 
+    public static final ChangeStreamOffset NO_STOPPING_OFFSET =
+            new ChangeStreamOffset(maximumBsonTimestamp());
+
     public ChangeStreamOffset(Map<String, String> offset) {
         this.offset = offset;
     }
 
-    public ChangeStreamOffset(@Nullable BsonDocument resumeToken, BsonTimestamp timestamp) {
-        Objects.requireNonNull(timestamp);
+    public ChangeStreamOffset(BsonDocument resumeToken) {
+        Objects.requireNonNull(resumeToken);
         Map<String, String> offsetMap = new HashMap<>();
-        offsetMap.put(TIMESTAMP_FIELD, String.valueOf(timestamp.getValue()));
-        offsetMap.put(
-                RESUME_TOKEN_FIELD,
-                Optional.ofNullable(resumeToken).map(BsonDocument::toJson).orElse(null));
+        offsetMap.put(TIMESTAMP_FIELD, String.valueOf(decodeTimestamp(resumeToken).getValue()));
+        offsetMap.put(RESUME_TOKEN_FIELD, resumeToken.toJson());
         this.offset = offsetMap;
     }
 
-    public void updatePosition(@Nullable BsonDocument resumeToken, BsonTimestamp timestamp) {
-        offset.put(TIMESTAMP_FIELD, String.valueOf(timestamp.getValue()));
-        offset.put(
-                RESUME_TOKEN_FIELD,
-                Optional.ofNullable(resumeToken).map(BsonDocument::toJson).orElse(null));
+    public ChangeStreamOffset(BsonTimestamp timestamp) {
+        Objects.requireNonNull(timestamp);
+        Map<String, String> offsetMap = new HashMap<>();
+        offsetMap.put(TIMESTAMP_FIELD, String.valueOf(timestamp.getValue()));
+        offsetMap.put(RESUME_TOKEN_FIELD, null);
+        this.offset = offsetMap;
+    }
+
+    public void updatePosition(BsonDocument resumeToken) {
+        Objects.requireNonNull(resumeToken);
+        offset.put(TIMESTAMP_FIELD, String.valueOf(decodeTimestamp(resumeToken).getValue()));
+        offset.put(RESUME_TOKEN_FIELD, resumeToken.toJson());
     }
 
     @Nullable

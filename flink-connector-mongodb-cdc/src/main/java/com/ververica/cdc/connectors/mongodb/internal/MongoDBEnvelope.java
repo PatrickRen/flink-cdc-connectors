@@ -43,6 +43,8 @@ public class MongoDBEnvelope {
 
     public static final String ID_FIELD = "_id";
 
+    public static final String DATA_FIELD = "_data";
+
     public static final String UUID_FIELD = "uuid";
 
     public static final String DROPPED_FIELD = "dropped";

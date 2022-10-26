@@ -107,8 +107,12 @@ public class MongoDBDialect
                 getResumeToken(
                         getChangeStreamIterable(sourceConfig, ChangeStreamDescriptor.deployment()));
 
-        ChangeStreamOffset changeStreamOffset =
-                new ChangeStreamOffset(startupResumeToken, currentBsonTimestamp());
+        ChangeStreamOffset changeStreamOffset;
+        if (startupResumeToken != null) {
+            changeStreamOffset = new ChangeStreamOffset(startupResumeToken);
+        } else {
+            changeStreamOffset = new ChangeStreamOffset(currentBsonTimestamp());
+        }
 
         LOG.info("Current change stream offset : {}", changeStreamOffset);
         return changeStreamOffset;

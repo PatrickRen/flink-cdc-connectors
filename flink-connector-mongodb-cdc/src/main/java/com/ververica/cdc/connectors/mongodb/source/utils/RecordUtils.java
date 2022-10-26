@@ -27,7 +27,6 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.bson.BsonDocument;
 import org.bson.BsonTimestamp;
-import org.bson.json.JsonReader;
 import org.bson.json.JsonWriterSettings;
 
 import java.time.Instant;
@@ -95,13 +94,6 @@ public class RecordUtils {
             return null;
         }
         return value.getInt64(Envelope.FieldName.TIMESTAMP);
-    }
-
-    /** Return the clusterTime from change stream record. */
-    public static BsonTimestamp getClusterTimeFromDataRecord(SourceRecord record) {
-        final Struct value = (Struct) record.value();
-        String clusterTime = value.getString(MongoDBEnvelope.CLUSTER_TIME_FIELD);
-        return new JsonReader(clusterTime).readTimestamp();
     }
 
     public static BsonTimestamp currentBsonTimestamp() {

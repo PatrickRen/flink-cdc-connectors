@@ -57,7 +57,6 @@ import static com.ververica.cdc.connectors.mongodb.source.utils.CollectionDiscov
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.getChangeStreamDescriptor;
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.getChangeStreamIterable;
 import static com.ververica.cdc.connectors.mongodb.source.utils.MongoUtils.getResumeToken;
-import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.currentBsonTimestamp;
 import static com.ververica.cdc.connectors.mongodb.utils.MongoDBContainer.FLINK_USER;
 import static com.ververica.cdc.connectors.mongodb.utils.MongoDBContainer.FLINK_USER_PASSWORD;
 import static java.util.Collections.singletonList;
@@ -124,8 +123,7 @@ public class MongoDBStreamSplitReaderTest extends MongoDBSourceTestBase {
                 new MongoDBSourceSplitReader(dialect, sourceConfig, 0, sourceReaderContext);
 
         try {
-            ChangeStreamOffset startOffset =
-                    new ChangeStreamOffset(startupResumeToken, currentBsonTimestamp());
+            ChangeStreamOffset startOffset = new ChangeStreamOffset(startupResumeToken);
 
             StreamSplit streamSplit =
                     new StreamSplit(

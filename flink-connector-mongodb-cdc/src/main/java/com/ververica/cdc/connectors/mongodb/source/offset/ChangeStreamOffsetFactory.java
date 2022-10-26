@@ -22,7 +22,6 @@ import java.util.Map;
 
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.bsonTimestampFromEpochMillis;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.currentBsonTimestamp;
-import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.maximumBsonTimestamp;
 
 /** An change stream offset factory class create {@link ChangeStreamOffset} instance. */
 public class ChangeStreamOffsetFactory extends OffsetFactory {
@@ -40,16 +39,16 @@ public class ChangeStreamOffsetFactory extends OffsetFactory {
 
     @Override
     public ChangeStreamOffset newOffset(Long position) {
-        return new ChangeStreamOffset(null, bsonTimestampFromEpochMillis(position));
+        return new ChangeStreamOffset(bsonTimestampFromEpochMillis(position));
     }
 
     @Override
     public ChangeStreamOffset createInitialOffset() {
-        return new ChangeStreamOffset(null, currentBsonTimestamp());
+        return new ChangeStreamOffset(currentBsonTimestamp());
     }
 
     @Override
     public ChangeStreamOffset createNoStoppingOffset() {
-        return new ChangeStreamOffset(null, maximumBsonTimestamp());
+        return ChangeStreamOffset.NO_STOPPING_OFFSET;
     }
 }

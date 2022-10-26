@@ -28,20 +28,15 @@ import com.ververica.cdc.connectors.mongodb.source.offset.ChangeStreamOffset;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.bson.BsonDocument;
-import org.bson.BsonTimestamp;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 
 import static com.ververica.cdc.connectors.mongodb.source.offset.ChangeStreamOffset.RESUME_TOKEN_FIELD;
 import static com.ververica.cdc.connectors.mongodb.source.offset.ChangeStreamOffset.TIMESTAMP_FIELD;
-import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.bsonTimestampFromEpochMillis;
-import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getClusterTimeFromDataRecord;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getFetchTimestamp;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getMessageTimestamp;
-import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getMessageTimestampFromHeartbeatEvent;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getOffsetValue;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.getResumeToken;
 import static com.ververica.cdc.connectors.mongodb.source.utils.RecordUtils.isHeartbeatEvent;
@@ -83,28 +78,22 @@ public final class MongoDBRecordEmitter<T>
         if (isHeartbeatEvent(element)) {
             if (splitState.isStreamSplitState()) {
                 BsonDocument resumeToken = getResumeToken(element);
-                Long messageTimestamp =
-                        Objects.requireNonNull(getMessageTimestampFromHeartbeatEvent(element));
-                BsonTimestamp timestamp = bsonTimestampFromEpochMillis(messageTimestamp);
-
                 StreamSplitState streamSplitState = splitState.asStreamSplitState();
                 ChangeStreamOffset offset =
                         (ChangeStreamOffset) streamSplitState.getStartingOffset();
                 if (offset != null) {
-                    offset.updatePosition(resumeToken, timestamp);
+                    offset.updatePosition(resumeToken);
                 }
                 splitState.asStreamSplitState().setStartingOffset(offset);
             }
         } else {
             if (splitState.isStreamSplitState()) {
                 BsonDocument resumeToken = getResumeToken(element);
-                BsonTimestamp clusterTime = getClusterTimeFromDataRecord(element);
-
                 StreamSplitState streamSplitState = splitState.asStreamSplitState();
                 ChangeStreamOffset offset =
                         (ChangeStreamOffset) streamSplitState.getStartingOffset();
                 if (offset != null) {
-                    offset.updatePosition(resumeToken, clusterTime);
+                    offset.updatePosition(resumeToken);
                 }
                 splitState.asStreamSplitState().setStartingOffset(offset);
             } else if (splitState.isSnapshotSplitState()) {
