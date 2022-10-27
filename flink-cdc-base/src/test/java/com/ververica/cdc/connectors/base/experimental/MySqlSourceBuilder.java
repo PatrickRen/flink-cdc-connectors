@@ -21,7 +21,7 @@ import org.apache.flink.annotation.Experimental;
 import com.ververica.cdc.connectors.base.experimental.config.MySqlSourceConfigFactory;
 import com.ververica.cdc.connectors.base.experimental.offset.BinlogOffsetFactory;
 import com.ververica.cdc.connectors.base.options.StartupOptions;
-import com.ververica.cdc.connectors.base.source.JdbcIncrementalSource;
+import com.ververica.cdc.connectors.base.source.IncrementalSource;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 
 import java.time.Duration;
@@ -225,8 +225,8 @@ public class MySqlSourceBuilder<T> {
                 configFactory, checkNotNull(deserializer), offsetFactory, dialect);
     }
 
-    /** The {@link JdbcIncrementalSource} implementation for MySQL. */
-    public static class MySqlIncrementalSource<T> extends JdbcIncrementalSource<T> {
+    /** The {@link IncrementalSource} implementation for MySQL. */
+    public static class MySqlIncrementalSource<T> extends IncrementalSource<T> {
 
         public MySqlIncrementalSource(
                 MySqlSourceConfigFactory configFactory,

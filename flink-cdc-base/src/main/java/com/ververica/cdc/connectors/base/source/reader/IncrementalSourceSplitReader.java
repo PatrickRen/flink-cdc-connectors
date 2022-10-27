@@ -22,21 +22,22 @@ import org.apache.flink.connector.base.source.reader.splitreader.SplitReader;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsAddition;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 
-import com.ververica.cdc.connectors.base.config.JdbcSourceConfig;
-import com.ververica.cdc.connectors.base.dialect.JdbcDataSourceDialect;
+import com.ververica.cdc.connectors.base.config.SourceConfig;
+import com.ververica.cdc.connectors.base.dialect.DataSourceDialect;
 import com.ververica.cdc.connectors.base.source.meta.split.ChangeEventRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
+import com.ververica.cdc.connectors.base.source.reader.external.FetchTask;
 import com.ververica.cdc.connectors.base.source.reader.external.Fetcher;
-import com.ververica.cdc.connectors.base.source.reader.external.JdbcSourceFetchTaskContext;
-import com.ververica.cdc.connectors.base.source.reader.external.JdbcSourceScanFetcher;
-import com.ververica.cdc.connectors.base.source.reader.external.JdbcSourceStreamFetcher;
+import com.ververica.cdc.connectors.base.source.reader.external.IncrementalSourceScanFetcher;
+import com.ververica.cdc.connectors.base.source.reader.external.IncrementalSourceStreamFetcher;
+import io.debezium.relational.TableId;
+import io.debezium.relational.history.TableChanges;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
@@ -44,19 +45,22 @@ import java.util.Queue;
 
 /** Basic class read {@link SourceSplitBase} and return {@link SourceRecord}. */
 @Experimental
-public class JdbcSourceSplitReader implements SplitReader<SourceRecords, SourceSplitBase> {
+public class IncrementalSourceSplitReader implements SplitReader<SourceRecords, SourceSplitBase> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceSplitReader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceSplitReader.class);
     private final Queue<SourceSplitBase> splits;
     private final int subtaskId;
 
     @Nullable private Fetcher<SourceRecords, SourceSplitBase> currentFetcher;
     @Nullable private String currentSplitId;
-    private final JdbcDataSourceDialect dataSourceDialect;
-    private final JdbcSourceConfig sourceConfig;
+    private final DataSourceDialect<TableId, TableChanges.TableChange, SourceConfig>
+            dataSourceDialect;
+    private final SourceConfig sourceConfig;
 
-    public JdbcSourceSplitReader(
-            int subtaskId, JdbcDataSourceDialect dataSourceDialect, JdbcSourceConfig sourceConfig) {
+    public IncrementalSourceSplitReader(
+            int subtaskId,
+            DataSourceDialect<TableId, TableChanges.TableChange, SourceConfig> dataSourceDialect,
+            SourceConfig sourceConfig) {
         this.subtaskId = subtaskId;
         this.splits = new ArrayDeque<>();
         this.dataSourceDialect = dataSourceDialect;
@@ -105,7 +109,7 @@ public class JdbcSourceSplitReader implements SplitReader<SourceRecords, SourceS
 
     protected void checkSplitOrStartNext() throws IOException {
         // the binlog fetcher should keep alive
-        if (currentFetcher instanceof JdbcSourceStreamFetcher) {
+        if (currentFetcher instanceof IncrementalSourceStreamFetcher) {
             return;
         }
 
@@ -118,9 +122,9 @@ public class JdbcSourceSplitReader implements SplitReader<SourceRecords, SourceS
 
             if (nextSplit.isSnapshotSplit()) {
                 if (currentFetcher == null) {
-                    final JdbcSourceFetchTaskContext taskContext =
+                    final FetchTask.Context taskContext =
                             dataSourceDialect.createFetchTaskContext(nextSplit, sourceConfig);
-                    currentFetcher = new JdbcSourceScanFetcher(taskContext, subtaskId);
+                    currentFetcher = new IncrementalSourceScanFetcher(taskContext, subtaskId);
                 }
             } else {
                 // point from snapshot split to binlog split
@@ -128,9 +132,9 @@ public class JdbcSourceSplitReader implements SplitReader<SourceRecords, SourceS
                     LOG.info("It's turn to read binlog split, close current snapshot fetcher.");
                     currentFetcher.close();
                 }
-                final JdbcSourceFetchTaskContext taskContext =
+                final FetchTask.Context taskContext =
                         dataSourceDialect.createFetchTaskContext(nextSplit, sourceConfig);
-                currentFetcher = new JdbcSourceStreamFetcher(taskContext, subtaskId);
+                currentFetcher = new IncrementalSourceStreamFetcher(taskContext, subtaskId);
                 LOG.info("Stream fetcher is created.");
             }
             currentFetcher.submitTask(dataSourceDialect.createFetchTask(nextSplit));

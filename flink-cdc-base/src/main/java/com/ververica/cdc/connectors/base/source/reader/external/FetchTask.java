@@ -17,6 +17,15 @@
 package com.ververica.cdc.connectors.base.source.reader.external;
 
 import org.apache.flink.annotation.Experimental;
+import org.apache.flink.table.types.logical.RowType;
+
+import com.ververica.cdc.connectors.base.source.meta.offset.Offset;
+import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
+import io.debezium.connector.base.ChangeEventQueue;
+import io.debezium.pipeline.DataChangeEvent;
+import io.debezium.relational.Table;
+import io.debezium.util.SchemaNameAdjuster;
+import org.apache.kafka.connect.source.SourceRecord;
 
 /** The task to fetching data of a Split. */
 @Experimental
@@ -32,5 +41,17 @@ public interface FetchTask<Split> {
     Split getSplit();
 
     /** Base context used in the execution of fetch task. */
-    interface Context {}
+    interface Context {
+        void configure(SourceSplitBase sourceSplitBase);
+
+        default SchemaNameAdjuster getSchemaNameAdjuster() {
+            return null;
+        }
+
+        ChangeEventQueue<DataChangeEvent> getQueue();
+
+        Offset getStreamOffset(SourceRecord sourceRecord);
+
+        RowType getSplitType(Table table);
+    }
 }

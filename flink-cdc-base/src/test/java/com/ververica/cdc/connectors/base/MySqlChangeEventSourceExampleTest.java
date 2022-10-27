@@ -33,7 +33,7 @@ import org.apache.flink.util.CloseableIterator;
 
 import com.ververica.cdc.connectors.base.experimental.MySqlSourceBuilder;
 import com.ververica.cdc.connectors.base.experimental.utils.MySqlConnectionUtils;
-import com.ververica.cdc.connectors.base.source.JdbcIncrementalSource;
+import com.ververica.cdc.connectors.base.source.IncrementalSource;
 import com.ververica.cdc.connectors.base.testutils.MySqlContainer;
 import com.ververica.cdc.connectors.base.testutils.MySqlVersion;
 import com.ververica.cdc.connectors.base.testutils.UniqueDatabase;
@@ -64,7 +64,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/** Example Tests for {@link JdbcIncrementalSource}. */
+/** Example Tests for {@link IncrementalSource}. */
 public class MySqlChangeEventSourceExampleTest {
 
     private static final Logger LOG =
@@ -97,7 +97,7 @@ public class MySqlChangeEventSourceExampleTest {
     @Ignore("Test ignored because it won't stop and is used for manual test")
     public void testConsumingScanEvents() throws Exception {
         inventoryDatabase.createAndInitialize();
-        JdbcIncrementalSource<String> mySqlChangeEventSource =
+        IncrementalSource<String> mySqlChangeEventSource =
                 new MySqlSourceBuilder()
                         .hostname(MYSQL_CONTAINER.getHost())
                         .port(MYSQL_CONTAINER.getDatabasePort())
@@ -137,7 +137,7 @@ public class MySqlChangeEventSourceExampleTest {
 
         inventoryDatabase.createAndInitialize();
         final String tableId = inventoryDatabase.getDatabaseName() + ".products";
-        JdbcIncrementalSource<RowData> mySqlChangeEventSource =
+        IncrementalSource<RowData> mySqlChangeEventSource =
                 new MySqlSourceBuilder()
                         .hostname(MYSQL_CONTAINER.getHost())
                         .port(MYSQL_CONTAINER.getDatabasePort())

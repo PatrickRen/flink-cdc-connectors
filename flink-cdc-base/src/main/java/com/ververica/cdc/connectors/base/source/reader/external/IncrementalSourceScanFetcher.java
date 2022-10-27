@@ -16,9 +16,8 @@
 
 package com.ververica.cdc.connectors.base.source.reader.external;
 
-import org.apache.flink.util.FlinkRuntimeException;
-
 import org.apache.flink.shaded.guava30.com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.flink.util.FlinkRuntimeException;
 
 import com.ververica.cdc.connectors.base.source.meta.split.SnapshotSplit;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
@@ -32,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,14 +55,14 @@ import static org.apache.flink.util.Preconditions.checkState;
 /**
  * Fetcher to fetch data from table split, the split is the snapshot split {@link SnapshotSplit}.
  */
-public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
+public class IncrementalSourceScanFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceScanFetcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceScanFetcher.class);
 
     public AtomicBoolean hasNextElement;
     public AtomicBoolean reachEnd;
 
-    private final JdbcSourceFetchTaskContext taskContext;
+    private final FetchTask.Context taskContext;
     private final ExecutorService executorService;
     private volatile ChangeEventQueue<DataChangeEvent> queue;
     private volatile Throwable readException;
@@ -76,7 +74,7 @@ public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplit
 
     private static final long READER_CLOSE_TIMEOUT_SECONDS = 30L;
 
-    public JdbcSourceScanFetcher(JdbcSourceFetchTaskContext taskContext, int subtaskId) {
+    public IncrementalSourceScanFetcher(FetchTask.Context taskContext, int subtaskId) {
         this.taskContext = taskContext;
         ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()

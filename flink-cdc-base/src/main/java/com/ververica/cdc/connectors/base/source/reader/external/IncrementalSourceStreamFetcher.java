@@ -16,10 +16,9 @@
 
 package com.ververica.cdc.connectors.base.source.reader.external;
 
+import org.apache.flink.shaded.guava30.com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.util.FlinkRuntimeException;
-
-import org.apache.flink.shaded.guava30.com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.ververica.cdc.connectors.base.source.meta.offset.Offset;
 import com.ververica.cdc.connectors.base.source.meta.split.FinishedSnapshotSplitInfo;
@@ -36,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,10 +52,10 @@ import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isDataCh
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.splitKeyRangeContains;
 
 /** Fetcher to fetch data from table split, the split is the stream split {@link StreamSplit}. */
-public class JdbcSourceStreamFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceStreamFetcher.class);
+public class IncrementalSourceStreamFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceStreamFetcher.class);
 
-    private final JdbcSourceFetchTaskContext taskContext;
+    private final FetchTask.Context taskContext;
     private final ExecutorService executorService;
     private final Set<TableId> pureBinlogPhaseTables;
 
@@ -73,7 +71,7 @@ public class JdbcSourceStreamFetcher implements Fetcher<SourceRecords, SourceSpl
 
     private static final long READER_CLOSE_TIMEOUT_SECONDS = 30L;
 
-    public JdbcSourceStreamFetcher(JdbcSourceFetchTaskContext taskContext, int subTaskId) {
+    public IncrementalSourceStreamFetcher(FetchTask.Context taskContext, int subTaskId) {
         this.taskContext = taskContext;
         ThreadFactory threadFactory =
                 new ThreadFactoryBuilder().setNameFormat("debezium-reader-" + subTaskId).build();

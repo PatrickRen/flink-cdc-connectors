@@ -23,7 +23,8 @@ import com.ververica.cdc.connectors.base.source.assigner.splitter.ChunkSplitter;
 import com.ververica.cdc.connectors.base.source.meta.offset.Offset;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
 import com.ververica.cdc.connectors.base.source.reader.external.FetchTask;
-import io.debezium.schema.DataCollectionId;
+import io.debezium.relational.TableId;
+import io.debezium.relational.history.TableChanges;
 
 import java.io.Serializable;
 import java.util.List;
@@ -37,7 +38,8 @@ import java.util.Map;
  * @param <C> The source config of data source.
  */
 @Experimental
-public interface DataSourceDialect<ID extends DataCollectionId, S, C extends SourceConfig>
+public interface DataSourceDialect<
+                ID extends TableId, S extends TableChanges.TableChange, C extends SourceConfig>
         extends Serializable {
 
     /** Get the name of dialect. */
