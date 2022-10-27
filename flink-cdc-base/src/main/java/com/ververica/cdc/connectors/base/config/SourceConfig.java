@@ -40,8 +40,8 @@ public interface SourceConfig extends Serializable {
 
     /** Factory for the {@code SourceConfig}. */
     @FunctionalInterface
-    interface Factory extends Serializable {
+    interface Factory<C extends SourceConfig> extends Serializable {
 
-        SourceConfig create(int subtask);
+        C create(int subtask);
     }
 }

@@ -25,7 +25,7 @@ import com.ververica.cdc.connectors.base.source.meta.offset.OffsetFactory;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitState;
 import com.ververica.cdc.connectors.base.source.metrics.SourceReaderMetrics;
-import com.ververica.cdc.connectors.base.source.reader.JdbcIncrementalSourceReader;
+import com.ververica.cdc.connectors.base.source.reader.IncrementalSourceReader;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import com.ververica.cdc.debezium.history.FlinkJsonTableChangeSerializer;
 import io.debezium.document.Array;
@@ -48,15 +48,15 @@ import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isSchema
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isWatermarkEvent;
 
 /**
- * The {@link RecordEmitter} implementation for {@link JdbcIncrementalSourceReader}.
+ * The {@link RecordEmitter} implementation for {@link IncrementalSourceReader}.
  *
  * <p>The {@link RecordEmitter} buffers the snapshot records of split and call the stream reader to
  * emit records rather than emit the records directly.
  */
-public class JdbcSourceRecordEmitter<T>
+public class IncrementalSourceRecordEmitter<T>
         implements RecordEmitter<SourceRecords, T, SourceSplitState> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceRecordEmitter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceRecordEmitter.class);
     private static final FlinkJsonTableChangeSerializer TABLE_CHANGE_SERIALIZER =
             new FlinkJsonTableChangeSerializer();
 
@@ -66,7 +66,7 @@ public class JdbcSourceRecordEmitter<T>
     private final OutputCollector<T> outputCollector;
     private final OffsetFactory offsetFactory;
 
-    public JdbcSourceRecordEmitter(
+    public IncrementalSourceRecordEmitter(
             DebeziumDeserializationSchema<T> debeziumDeserializationSchema,
             SourceReaderMetrics sourceReaderMetrics,
             boolean includeSchemaChanges,

@@ -16,7 +16,6 @@
 
 package com.ververica.cdc.connectors.base.source.reader.external;
 
-import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.util.FlinkRuntimeException;
 
 import org.apache.flink.shaded.guava30.com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -26,7 +25,6 @@ import com.ververica.cdc.connectors.base.source.meta.split.FinishedSnapshotSplit
 import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
 import com.ververica.cdc.connectors.base.source.meta.split.StreamSplit;
-import com.ververica.cdc.connectors.base.utils.SourceRecordUtils;
 import io.debezium.connector.base.ChangeEventQueue;
 import io.debezium.pipeline.DataChangeEvent;
 import io.debezium.relational.TableId;
@@ -51,13 +49,12 @@ import java.util.concurrent.TimeUnit;
 
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.getTableId;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isDataChangeRecord;
-import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.splitKeyRangeContains;
 
 /** Fetcher to fetch data from table split, the split is the stream split {@link StreamSplit}. */
-public class JdbcSourceStreamFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceStreamFetcher.class);
+public class IncrementalSourceStreamFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceStreamFetcher.class);
 
-    private final JdbcSourceFetchTaskContext taskContext;
+    private final FetchTask.Context taskContext;
     private final ExecutorService executorService;
     private final Set<TableId> pureStreamPhaseTables;
 
@@ -73,7 +70,7 @@ public class JdbcSourceStreamFetcher implements Fetcher<SourceRecords, SourceSpl
 
     private static final long READER_CLOSE_TIMEOUT_SECONDS = 30L;
 
-    public JdbcSourceStreamFetcher(JdbcSourceFetchTaskContext taskContext, int subTaskId) {
+    public IncrementalSourceStreamFetcher(FetchTask.Context taskContext, int subTaskId) {
         this.taskContext = taskContext;
         ThreadFactory threadFactory =
                 new ThreadFactoryBuilder().setNameFormat("debezium-reader-" + subTaskId).build();
@@ -177,14 +174,11 @@ public class JdbcSourceStreamFetcher implements Fetcher<SourceRecords, SourceSpl
             }
             // only the table who captured snapshot splits need to filter
             if (finishedSplitsInfo.containsKey(tableId)) {
-                RowType splitKeyType =
-                        taskContext.getSplitType(taskContext.getDatabaseSchema().tableFor(tableId));
-                Object[] key =
-                        SourceRecordUtils.getSplitKey(
-                                splitKeyType, sourceRecord, taskContext.getSchemaNameAdjuster());
                 for (FinishedSnapshotSplitInfo splitInfo : finishedSplitsInfo.get(tableId)) {
-                    if (splitKeyRangeContains(
-                                    key, splitInfo.getSplitStart(), splitInfo.getSplitEnd())
+                    if (taskContext.isRecordBetween(
+                                    sourceRecord,
+                                    splitInfo.getSplitStart(),
+                                    splitInfo.getSplitEnd())
                             && position.isAfter(splitInfo.getHighWatermark())) {
                         return true;
                     }

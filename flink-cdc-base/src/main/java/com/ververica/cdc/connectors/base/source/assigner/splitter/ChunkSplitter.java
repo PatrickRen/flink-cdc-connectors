@@ -19,14 +19,14 @@ package com.ververica.cdc.connectors.base.source.assigner.splitter;
 import org.apache.flink.annotation.Experimental;
 
 import com.ververica.cdc.connectors.base.source.meta.split.SnapshotSplit;
-import io.debezium.schema.DataCollectionId;
+import io.debezium.relational.TableId;
 
 import java.util.Collection;
 
 /** The splitter used to split collection into a set of chunks. */
 @Experimental
-public interface ChunkSplitter<ID extends DataCollectionId> {
+public interface ChunkSplitter {
 
     /** Generates all snapshot splits (chunks) for the give data collection. */
-    Collection<SnapshotSplit> generateSplits(ID dataCollectionId);
+    Collection<SnapshotSplit> generateSplits(TableId tableId);
 }

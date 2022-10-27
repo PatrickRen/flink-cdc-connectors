@@ -18,6 +18,12 @@ package com.ververica.cdc.connectors.base.source.reader.external;
 
 import org.apache.flink.annotation.Experimental;
 
+import com.ververica.cdc.connectors.base.source.meta.offset.Offset;
+import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
+import io.debezium.connector.base.ChangeEventQueue;
+import io.debezium.pipeline.DataChangeEvent;
+import org.apache.kafka.connect.source.SourceRecord;
+
 /** The task to fetching data of a Split. */
 @Experimental
 public interface FetchTask<Split> {
@@ -32,5 +38,13 @@ public interface FetchTask<Split> {
     Split getSplit();
 
     /** Base context used in the execution of fetch task. */
-    interface Context {}
+    interface Context {
+        void configure(SourceSplitBase sourceSplitBase);
+
+        ChangeEventQueue<DataChangeEvent> getQueue();
+
+        Offset getStreamOffset(SourceRecord sourceRecord);
+
+        boolean isRecordBetween(SourceRecord record, Object[] splitStart, Object[] splitEnd);
+    }
 }

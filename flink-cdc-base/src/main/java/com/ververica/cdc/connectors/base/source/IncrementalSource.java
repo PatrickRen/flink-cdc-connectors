@@ -20,7 +20,6 @@ import org.apache.flink.annotation.Experimental;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.Source;
-import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -30,12 +29,10 @@ import org.apache.flink.connector.base.source.reader.synchronization.FutureCompl
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.util.FlinkRuntimeException;
 
-import com.ververica.cdc.connectors.base.config.JdbcSourceConfig;
-import com.ververica.cdc.connectors.base.config.JdbcSourceConfigFactory;
 import com.ververica.cdc.connectors.base.config.SourceConfig;
-import com.ververica.cdc.connectors.base.dialect.JdbcDataSourceDialect;
+import com.ververica.cdc.connectors.base.dialect.DataSourceDialect;
 import com.ververica.cdc.connectors.base.options.StartupMode;
-import com.ververica.cdc.connectors.base.relational.JdbcSourceRecordEmitter;
+import com.ververica.cdc.connectors.base.relational.IncrementalSourceRecordEmitter;
 import com.ververica.cdc.connectors.base.source.assigner.HybridSplitAssigner;
 import com.ververica.cdc.connectors.base.source.assigner.SplitAssigner;
 import com.ververica.cdc.connectors.base.source.assigner.StreamSplitAssigner;
@@ -49,8 +46,8 @@ import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitSerializer;
 import com.ververica.cdc.connectors.base.source.metrics.SourceReaderMetrics;
-import com.ververica.cdc.connectors.base.source.reader.JdbcIncrementalSourceReader;
-import com.ververica.cdc.connectors.base.source.reader.JdbcSourceSplitReader;
+import com.ververica.cdc.connectors.base.source.reader.IncrementalSourceReader;
+import com.ververica.cdc.connectors.base.source.reader.IncrementalSourceSplitReader;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import io.debezium.relational.TableId;
 
@@ -58,27 +55,27 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * The basic source of Incremental Snapshot framework for JDBC datasource, it is based on FLIP-27
- * and Watermark Signal Algorithm which supports parallel reading snapshot of table and then
- * continue to capture data change by streaming reading.
+ * The basic source of Incremental Snapshot framework for datasource, it is based on FLIP-27 and
+ * Watermark Signal Algorithm which supports parallel reading snapshot of table and then continue to
+ * capture data change by streaming reading.
  */
 @Experimental
-public class JdbcIncrementalSource<T>
+public class IncrementalSource<T, C extends SourceConfig>
         implements Source<T, SourceSplitBase, PendingSplitsState>, ResultTypeQueryable<T> {
 
     private static final long serialVersionUID = 1L;
 
-    private final JdbcSourceConfigFactory configFactory;
-    private final JdbcDataSourceDialect dataSourceDialect;
+    private final SourceConfig.Factory<C> configFactory;
+    private final DataSourceDialect<C> dataSourceDialect;
     private final OffsetFactory offsetFactory;
     private final DebeziumDeserializationSchema<T> deserializationSchema;
     private final SourceSplitSerializer sourceSplitSerializer;
 
-    public JdbcIncrementalSource(
-            JdbcSourceConfigFactory configFactory,
+    public IncrementalSource(
+            SourceConfig.Factory<C> configFactory,
             DebeziumDeserializationSchema<T> deserializationSchema,
             OffsetFactory offsetFactory,
-            JdbcDataSourceDialect dataSourceDialect) {
+            DataSourceDialect<C> dataSourceDialect) {
         this.configFactory = configFactory;
         this.deserializationSchema = deserializationSchema;
         this.offsetFactory = offsetFactory;
@@ -98,22 +95,22 @@ public class JdbcIncrementalSource<T>
     }
 
     @Override
-    public SourceReader createReader(SourceReaderContext readerContext) {
+    public IncrementalSourceReader<T, C> createReader(SourceReaderContext readerContext) {
         // create source config for the given subtask (e.g. unique server id)
-        JdbcSourceConfig sourceConfig = configFactory.create(readerContext.getIndexOfSubtask());
+        C sourceConfig = configFactory.create(readerContext.getIndexOfSubtask());
         FutureCompletingBlockingQueue<RecordsWithSplitIds<SourceRecords>> elementsQueue =
                 new FutureCompletingBlockingQueue<>();
         final SourceReaderMetrics sourceReaderMetrics =
                 new SourceReaderMetrics(readerContext.metricGroup());
         sourceReaderMetrics.registerMetrics();
-        Supplier<JdbcSourceSplitReader> splitReaderSupplier =
+        Supplier<IncrementalSourceSplitReader<C>> splitReaderSupplier =
                 () ->
-                        new JdbcSourceSplitReader(
+                        new IncrementalSourceSplitReader<>(
                                 readerContext.getIndexOfSubtask(), dataSourceDialect, sourceConfig);
-        return new JdbcIncrementalSourceReader<>(
+        return new IncrementalSourceReader<>(
                 elementsQueue,
                 splitReaderSupplier,
-                new JdbcSourceRecordEmitter<>(
+                new IncrementalSourceRecordEmitter<>(
                         deserializationSchema,
                         sourceReaderMetrics,
                         sourceConfig.isIncludeSchemaChanges(),
@@ -128,7 +125,7 @@ public class JdbcIncrementalSource<T>
     @Override
     public SplitEnumerator<SourceSplitBase, PendingSplitsState> createEnumerator(
             SplitEnumeratorContext<SourceSplitBase> enumContext) {
-        JdbcSourceConfig sourceConfig = configFactory.create(0);
+        C sourceConfig = configFactory.create(0);
         final SplitAssigner splitAssigner;
         if (sourceConfig.getStartupOptions().startupMode == StartupMode.INITIAL) {
             try {
@@ -137,7 +134,7 @@ public class JdbcIncrementalSource<T>
                 boolean isTableIdCaseSensitive =
                         dataSourceDialect.isDataCollectionIdCaseSensitive(sourceConfig);
                 splitAssigner =
-                        new HybridSplitAssigner(
+                        new HybridSplitAssigner<>(
                                 sourceConfig,
                                 enumContext.currentParallelism(),
                                 remainingTables,
@@ -158,12 +155,12 @@ public class JdbcIncrementalSource<T>
     @Override
     public SplitEnumerator<SourceSplitBase, PendingSplitsState> restoreEnumerator(
             SplitEnumeratorContext<SourceSplitBase> enumContext, PendingSplitsState checkpoint) {
-        SourceConfig sourceConfig = configFactory.create(0);
+        C sourceConfig = configFactory.create(0);
 
         final SplitAssigner splitAssigner;
         if (checkpoint instanceof HybridPendingSplitsState) {
             splitAssigner =
-                    new HybridSplitAssigner(
+                    new HybridSplitAssigner<>(
                             sourceConfig,
                             enumContext.currentParallelism(),
                             (HybridPendingSplitsState) checkpoint,

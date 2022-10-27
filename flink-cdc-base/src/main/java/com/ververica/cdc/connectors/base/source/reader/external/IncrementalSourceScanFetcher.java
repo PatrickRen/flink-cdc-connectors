@@ -25,7 +25,6 @@ import com.ververica.cdc.connectors.base.source.meta.split.SourceRecords;
 import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
 import io.debezium.connector.base.ChangeEventQueue;
 import io.debezium.pipeline.DataChangeEvent;
-import io.debezium.util.SchemaNameAdjuster;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
@@ -45,26 +44,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.formatMessageTimestamp;
-import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.getSplitKey;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isDataChangeRecord;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isEndWatermarkEvent;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isHighWatermarkEvent;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.isLowWatermarkEvent;
 import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.rewriteOutputBuffer;
-import static com.ververica.cdc.connectors.base.utils.SourceRecordUtils.splitKeyRangeContains;
 import static org.apache.flink.util.Preconditions.checkState;
 
 /**
  * Fetcher to fetch data from table split, the split is the snapshot split {@link SnapshotSplit}.
  */
-public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
+public class IncrementalSourceScanFetcher implements Fetcher<SourceRecords, SourceSplitBase> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JdbcSourceScanFetcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IncrementalSourceScanFetcher.class);
 
     public AtomicBoolean hasNextElement;
     public AtomicBoolean reachEnd;
 
-    private final JdbcSourceFetchTaskContext taskContext;
+    private final FetchTask.Context taskContext;
     private final ExecutorService executorService;
     private volatile ChangeEventQueue<DataChangeEvent> queue;
     private volatile Throwable readException;
@@ -72,11 +69,10 @@ public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplit
     // task to read snapshot for current split
     private FetchTask<SourceSplitBase> snapshotSplitReadTask;
     private SnapshotSplit currentSnapshotSplit;
-    private SchemaNameAdjuster nameAdjuster;
 
     private static final long READER_CLOSE_TIMEOUT_SECONDS = 30L;
 
-    public JdbcSourceScanFetcher(JdbcSourceFetchTaskContext taskContext, int subtaskId) {
+    public IncrementalSourceScanFetcher(FetchTask.Context taskContext, int subtaskId) {
         this.taskContext = taskContext;
         ThreadFactory threadFactory =
                 new ThreadFactoryBuilder()
@@ -92,7 +88,6 @@ public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplit
         this.snapshotSplitReadTask = fetchTask;
         this.currentSnapshotSplit = fetchTask.getSplit().asSnapshotSplit();
         taskContext.configure(currentSnapshotSplit);
-        this.nameAdjuster = taskContext.getSchemaNameAdjuster();
         this.queue = taskContext.getQueue();
         this.hasNextElement.set(true);
         this.reachEnd.set(false);
@@ -220,10 +215,10 @@ public class JdbcSourceScanFetcher implements Fetcher<SourceRecords, SourceSplit
 
     private boolean isChangeRecordInChunkRange(SourceRecord record) {
         if (isDataChangeRecord(record)) {
-            Object[] key =
-                    getSplitKey(currentSnapshotSplit.getSplitKeyType(), record, nameAdjuster);
-            return splitKeyRangeContains(
-                    key, currentSnapshotSplit.getSplitStart(), currentSnapshotSplit.getSplitEnd());
+            return taskContext.isRecordBetween(
+                    record,
+                    currentSnapshotSplit.getSplitStart(),
+                    currentSnapshotSplit.getSplitEnd());
         }
         return false;
     }

@@ -22,11 +22,8 @@ import com.ververica.cdc.connectors.base.config.JdbcSourceConfig;
 import com.ververica.cdc.connectors.base.config.SourceConfig;
 import com.ververica.cdc.connectors.base.dialect.JdbcDataSourceDialect;
 import com.ververica.cdc.connectors.base.relational.JdbcSourceEventDispatcher;
-import com.ververica.cdc.connectors.base.source.meta.offset.Offset;
-import com.ververica.cdc.connectors.base.source.meta.split.SourceSplitBase;
+import com.ververica.cdc.connectors.base.utils.SourceRecordUtils;
 import io.debezium.config.CommonConnectorConfig;
-import io.debezium.connector.base.ChangeEventQueue;
-import io.debezium.pipeline.DataChangeEvent;
 import io.debezium.pipeline.ErrorHandler;
 import io.debezium.pipeline.spi.OffsetContext;
 import io.debezium.relational.RelationalDatabaseSchema;
@@ -50,7 +47,13 @@ public abstract class JdbcSourceFetchTaskContext implements FetchTask.Context {
         this.schemaNameAdjuster = SchemaNameAdjuster.create();
     }
 
-    public abstract void configure(SourceSplitBase sourceSplitBase);
+    @Override
+    public boolean isRecordBetween(SourceRecord record, Object[] splitStart, Object[] splitEnd) {
+        RowType splitKeyType =
+                getSplitType(getDatabaseSchema().tableFor(SourceRecordUtils.getTableId(record)));
+        Object[] key = SourceRecordUtils.getSplitKey(splitKeyType, record, getSchemaNameAdjuster());
+        return SourceRecordUtils.splitKeyRangeContains(key, splitStart, splitEnd);
+    }
 
     public SourceConfig getSourceConfig() {
         return sourceConfig;
@@ -77,8 +80,4 @@ public abstract class JdbcSourceFetchTaskContext implements FetchTask.Context {
     public abstract JdbcSourceEventDispatcher getDispatcher();
 
     public abstract OffsetContext getOffsetContext();
-
-    public abstract ChangeEventQueue<DataChangeEvent> getQueue();
-
-    public abstract Offset getStreamOffset(SourceRecord sourceRecord);
 }
