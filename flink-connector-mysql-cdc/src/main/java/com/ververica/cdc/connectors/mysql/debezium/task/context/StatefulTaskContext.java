@@ -27,6 +27,7 @@ import com.ververica.cdc.connectors.mysql.source.split.MySqlSplit;
 import io.debezium.connector.AbstractSourceInfo;
 import io.debezium.connector.base.ChangeEventQueue;
 import io.debezium.connector.mysql.GtidSet;
+import io.debezium.connector.mysql.GtidUtils;
 import io.debezium.connector.mysql.MySqlChangeEventSourceMetricsFactory;
 import io.debezium.connector.mysql.MySqlConnection;
 import io.debezium.connector.mysql.MySqlConnectorConfig;
@@ -221,10 +222,12 @@ public class StatefulTaskContext {
                     "Connector used GTIDs previously, but MySQL does not know of any GTIDs or they are not enabled");
             return false;
         }
-        // GTIDs are enabled
-        GtidSet gtidSet = new GtidSet(gtidStr);
         // Get the GTID set that is available in the server ...
         GtidSet availableGtidSet = new GtidSet(availableGtidStr);
+        // GTIDs are enabled
+        LOG.info("Merging server GTID set {} with restored GTID set {}", availableGtidSet, gtidStr);
+        GtidSet gtidSet = GtidUtils.fixRestoredGtidSet(availableGtidSet, new GtidSet(gtidStr));
+        LOG.info("Merged GTID set is {}", gtidSet);
         if (gtidSet.isContainedWithin(availableGtidSet)) {
             LOG.info(
                     "MySQL current GTID set {} does contain the GTID set {} required by the connector.",

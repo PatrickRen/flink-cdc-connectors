@@ -90,6 +90,9 @@ import static io.debezium.util.Strings.isNullOrEmpty;
  * remove this class after we bumped a higher debezium version where the
  * https://issues.redhat.com/browse/DBZ-5126 has been fixed.
  *
+ * <p>Line 1332-1337 : Adjust GTID merging logic to support recovering from job which previously *
+ * specifying starting offset on start.
+ *
  * <p>Line 1386 : Add more error details for some exceptions.
  */
 public class MySqlStreamingChangeEventSource
@@ -1326,10 +1329,12 @@ public class MySqlStreamingChangeEventSource
                     "Relevant GTID set available on server: {}", relevantAvailableServerGtidSet);
 
             mergedGtidSet =
-                    relevantAvailableServerGtidSet
-                            .retainAll(uuid -> knownGtidSet.forServerWithId(uuid) != null)
-                            .with(purgedServerGtid)
-                            .with(filteredGtidSet);
+                    GtidUtils.fixRestoredGtidSet(
+                            GtidUtils.mergeGtidSetInto(
+                                    relevantAvailableServerGtidSet.retainAll(
+                                            uuid -> knownGtidSet.forServerWithId(uuid) != null),
+                                    purgedServerGtid),
+                            filteredGtidSet);
         } else {
             mergedGtidSet = availableServerGtidSet.with(filteredGtidSet);
         }
