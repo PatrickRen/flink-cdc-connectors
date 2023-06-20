@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Ververica Inc.
+ * Copyright 2023 Ververica Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package io.debezium.connector.mysql;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import static io.debezium.connector.mysql.GtidUtils.fixRestoredGtidSet;
 import static io.debezium.connector.mysql.GtidUtils.mergeGtidSetInto;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Unit test for {@link GtidUtils}. */
-class GtidUtilsTest {
+public class GtidUtilsTest {
     @Test
-    void testFixingRestoredGtidSet() {
+    public void testFixingRestoredGtidSet() {
         GtidSet serverGtidSet = new GtidSet("A:1-100");
         GtidSet restoredGtidSet = new GtidSet("A:30-100");
         assertThat(fixRestoredGtidSet(serverGtidSet, restoredGtidSet).toString())
@@ -53,7 +53,7 @@ class GtidUtilsTest {
     }
 
     @Test
-    void testMergingGtidSets() {
+    public void testMergingGtidSets() {
         GtidSet base = new GtidSet("A:1-100");
         GtidSet toMerge = new GtidSet("A:1-10");
         assertThat(mergeGtidSetInto(base, toMerge).toString()).isEqualTo("A:1-100");

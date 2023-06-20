@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Ververica Inc.
+ * Copyright 2022-2023 Ververica Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.apache.flink.streaming.api.operators.collect.CollectSinkOperator;
 import org.apache.flink.streaming.api.operators.collect.CollectSinkOperatorFactory;
 import org.apache.flink.streaming.api.operators.collect.CollectStreamSink;
 import org.apache.flink.table.data.RowData;
-import org.apache.flink.test.junit5.MiniClusterExtension;
 import org.apache.flink.util.FlinkRuntimeException;
 
 import com.ververica.cdc.connectors.mysql.debezium.DebeziumUtils;
@@ -42,10 +41,9 @@ import com.ververica.cdc.connectors.mysql.testutils.TestTable;
 import com.ververica.cdc.connectors.mysql.testutils.TestTableSchemas;
 import com.ververica.cdc.connectors.mysql.testutils.UniqueDatabase;
 import io.debezium.connector.mysql.MySqlConnection;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +74,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Integration test for validating specifying starting offset. */
 public class SpecificStartingOffsetITCase {
     private static final Logger LOG = LoggerFactory.getLogger(SpecificStartingOffsetITCase.class);
-    @RegisterExtension static MiniClusterExtension miniCluster = new MiniClusterExtension();
 
     @SuppressWarnings("unchecked")
     private final MySqlContainer mysql =
@@ -98,23 +95,23 @@ public class SpecificStartingOffsetITCase {
 
     private MySqlConnection connection;
 
-    @BeforeEach
-    void prepare() throws Exception {
+    @Before
+    public void prepare() throws Exception {
         mysql.start();
         connection = getConnection();
         customDatabase.createAndInitialize();
         flushLogs();
     }
 
-    @AfterEach
-    void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         customDatabase.dropDatabase();
         connection.close();
         mysql.stop();
     }
 
     @Test
-    void testStartingFromEarliestOffset() throws Exception {
+    public void testStartingFromEarliestOffset() throws Exception {
         // Purge binary log at first
         purgeBinaryLogs();
 
@@ -183,7 +180,7 @@ public class SpecificStartingOffsetITCase {
     }
 
     @Test
-    void testStartingFromSpecificOffset() throws Exception {
+    public void testStartingFromSpecificOffset() throws Exception {
         // Purge binary log at first
         purgeBinaryLogs();
 
@@ -259,7 +256,7 @@ public class SpecificStartingOffsetITCase {
     }
 
     @Test
-    void testStartingFromTimestampOffset() throws Exception {
+    public void testStartingFromTimestampOffset() throws Exception {
         // Purge binary log at first
         purgeBinaryLogs();
 
