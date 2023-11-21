@@ -22,12 +22,16 @@ import org.apache.flink.streaming.runtime.operators.sink.DataSinkWriterOperator;
 import org.apache.flink.util.SerializedValue;
 
 import com.ververica.cdc.common.event.TableId;
+import com.ververica.cdc.common.schema.Schema;
 import com.ververica.cdc.runtime.operators.schema.SchemaOperator;
 import com.ververica.cdc.runtime.operators.schema.coordinator.SchemaRegistry;
 import com.ververica.cdc.runtime.operators.schema.event.FlushSuccessEvent;
+import com.ververica.cdc.runtime.operators.schema.event.SchemaRequest;
+import com.ververica.cdc.runtime.operators.schema.event.SchemaResponse;
 import com.ververica.cdc.runtime.operators.schema.event.SinkWriterRegisterEvent;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Client for {@link DataSinkWriterOperator} interact with {@link SchemaRegistry} when table schema
@@ -56,5 +60,17 @@ public class SchemaEvolutionClient {
     public void notifyFlushSuccess(int subtask, TableId tableId) throws IOException {
         toCoordinator.sendOperatorEventToCoordinator(
                 schemaOperatorID, new SerializedValue<>(new FlushSuccessEvent(subtask, tableId)));
+    }
+
+    public Optional<Schema> getLatestSchema(TableId tableId) throws Exception {
+        SchemaResponse schemaResponse =
+                (SchemaResponse)
+                        toCoordinator
+                                .sendRequestToCoordinator(
+                                        schemaOperatorID,
+                                        new SerializedValue<>(
+                                                SchemaRequest.ofLatestSchema(tableId)))
+                                .get();
+        return schemaResponse.getSchema();
     }
 }
