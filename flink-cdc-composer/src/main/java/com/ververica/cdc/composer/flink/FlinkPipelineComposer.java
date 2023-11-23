@@ -22,6 +22,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import com.ververica.cdc.common.configuration.Configuration;
 import com.ververica.cdc.common.event.Event;
 import com.ververica.cdc.common.factories.DataSinkFactory;
+import com.ververica.cdc.common.factories.DataSourceFactory;
 import com.ververica.cdc.common.factories.FactoryHelper;
 import com.ververica.cdc.common.pipeline.PipelineOptions;
 import com.ververica.cdc.common.sink.DataSink;
@@ -64,6 +65,7 @@ public class FlinkPipelineComposer implements PipelineComposer {
     @Override
     public PipelineExecution compose(PipelineDef pipelineDef) {
         int parallelism = pipelineDef.getConfig().get(PipelineOptions.GLOBAL_PARALLELISM);
+        env.getConfig().setParallelism(parallelism);
 
         // Source
         DataSourceTranslator sourceTranslator = new DataSourceTranslator();
@@ -102,6 +104,18 @@ public class FlinkPipelineComposer implements PipelineComposer {
         DataSinkFactory sinkFactory =
                 FactoryDiscoveryUtils.getFactoryByIdentifier(
                         sinkDef.getType(), DataSinkFactory.class);
+
+        // Add source JAR to environment
+        try {
+            EnvironmentUtils.addJar(
+                    env,
+                    FactoryDiscoveryUtils.getJarPathByIdentifier(
+                            sinkDef.getType(), DataSourceFactory.class));
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    String.format("Cannot add connector JAR for sink \"%s\"", sinkDef.getType()),
+                    e);
+        }
 
         // Create data sink
         return sinkFactory.createDataSink(

@@ -26,12 +26,14 @@ import com.ververica.cdc.common.data.RecordData;
 import com.ververica.cdc.common.event.DataChangeEvent;
 import com.ververica.cdc.common.event.Event;
 import com.ververica.cdc.common.event.FlushEvent;
+import com.ververica.cdc.common.event.OperationType;
 import com.ververica.cdc.common.event.SchemaChangeEvent;
 import com.ververica.cdc.common.event.TableId;
 import com.ververica.cdc.common.schema.Schema;
 import com.ververica.cdc.runtime.operators.sink.SchemaEvolutionClient;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,7 +51,8 @@ public class PrePartitionOperator extends AbstractStreamOperator<PartitioningEve
     private final int downstreamParallelism;
 
     private SchemaEvolutionClient schemaEvolutionClient;
-    private Map<TableId, Function<DataChangeEvent, Integer>> cachedHashFunctions;
+    private final Map<TableId, Function<DataChangeEvent, Integer>> cachedHashFunctions =
+            new HashMap<>();
 
     public PrePartitionOperator(OperatorID schemaOperatorId, int downstreamParallelism) {
         this.schemaOperatorId = schemaOperatorId;
@@ -87,7 +90,8 @@ public class PrePartitionOperator extends AbstractStreamOperator<PartitioningEve
         output.collect(
                 new StreamRecord<>(
                         new PartitioningEvent(
-                                dataChangeEvent, hashFunction.apply(dataChangeEvent))));
+                                dataChangeEvent,
+                                hashFunction.apply(dataChangeEvent) % downstreamParallelism)));
     }
 
     private void broadcastEvent(Event toBroadcast) {
@@ -122,7 +126,8 @@ public class PrePartitionOperator extends AbstractStreamOperator<PartitioningEve
             objectsToHash.add(tableId.getTableName());
 
             // Primary key
-            RecordData data = event.after();
+            RecordData data =
+                    event.op().equals(OperationType.DELETE) ? event.before() : event.after();
             for (RecordData.FieldGetter primaryKeyGetter : primaryKeyGetters) {
                 objectsToHash.add(primaryKeyGetter.getFieldOrNull(data));
             }

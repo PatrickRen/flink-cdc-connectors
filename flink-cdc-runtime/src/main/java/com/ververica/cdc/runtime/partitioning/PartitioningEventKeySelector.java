@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package com.ververica.cdc.common.sink;
+package com.ververica.cdc.runtime.partitioning;
 
-import com.ververica.cdc.common.annotation.PublicEvolving;
-import com.ververica.cdc.common.event.SchemaChangeEvent;
+import org.apache.flink.api.java.functions.KeySelector;
 
-import java.io.Serializable;
-
-/** {@code MetadataApplier} is used to apply metadata changes to external systems. */
-@PublicEvolving
-public interface MetadataApplier extends Serializable {
-
-    /** Apply the given {@link SchemaChangeEvent} to external systems. */
-    void applySchemaChange(SchemaChangeEvent schemaChangeEvent);
+/** Key selector for {@link PartitioningEvent}. */
+public class PartitioningEventKeySelector implements KeySelector<PartitioningEvent, Integer> {
+    @Override
+    public Integer getKey(PartitioningEvent event) {
+        return event.getTargetPartition();
+    }
 }

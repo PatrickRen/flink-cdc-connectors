@@ -71,8 +71,7 @@ public class ValuesDataSource implements DataSource {
 
     @Override
     public EventSourceProvider getEventSourceProvider() {
-        ValuesDataSourceHelper.setSourceEvents(eventType);
-        return FlinkSourceProvider.of(new ValuesSource(failAtPos));
+        return FlinkSourceProvider.of(new ValuesSource(failAtPos, eventType));
     }
 
     @Override
@@ -90,9 +89,11 @@ public class ValuesDataSource implements DataSource {
         private static final long serialVersionUID = 1L;
 
         private final int failAtPos;
+        private final ValuesDataSourceHelper.SourceEventType eventType;
 
-        public ValuesSource(int failAtPos) {
+        public ValuesSource(int failAtPos, ValuesDataSourceHelper.SourceEventType eventType) {
             this.failAtPos = failAtPos;
+            this.eventType = eventType;
         }
 
         @Override
@@ -104,6 +105,7 @@ public class ValuesDataSource implements DataSource {
         public SplitEnumerator<EventIteratorSplit, Collection<EventIteratorSplit>> createEnumerator(
                 SplitEnumeratorContext<EventIteratorSplit> enumContext) {
             Collection<EventIteratorSplit> eventIteratorSplits = new ArrayList<>();
+            ValuesDataSourceHelper.setSourceEvents(eventType);
             List<List<Event>> eventWithSplits = ValuesDataSourceHelper.getSourceEvents();
             for (int i = 0; i < eventWithSplits.size(); i++) {
                 eventIteratorSplits.add(new EventIteratorSplit(i, 0));

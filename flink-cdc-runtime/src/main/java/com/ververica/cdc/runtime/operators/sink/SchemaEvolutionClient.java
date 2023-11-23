@@ -18,7 +18,6 @@ package com.ververica.cdc.runtime.operators.sink;
 
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.jobgraph.tasks.TaskOperatorEventGateway;
-import org.apache.flink.streaming.runtime.operators.sink.DataSinkWriterOperator;
 import org.apache.flink.util.SerializedValue;
 
 import com.ververica.cdc.common.event.TableId;

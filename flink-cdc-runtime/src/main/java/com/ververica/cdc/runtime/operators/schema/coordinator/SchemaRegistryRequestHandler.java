@@ -101,6 +101,7 @@ public class SchemaRegistryRequestHandler {
             }
             CompletableFuture<CoordinationResponse> response =
                     CompletableFuture.completedFuture(new SchemaChangeResponse(true));
+            schemaManager.applySchemaChange(request.getSchemaChangeEvent());
             pendingSchemaChanges.add(new PendingSchemaChange(request, response));
             return response;
         } else {
@@ -156,6 +157,7 @@ public class SchemaRegistryRequestHandler {
                 pendingSchemaChange.getResponseFuture().complete(new SchemaChangeResponse(false));
                 pendingSchemaChanges.remove(0);
             } else {
+                schemaManager.applySchemaChange(request.getSchemaChangeEvent());
                 pendingSchemaChange.getResponseFuture().complete(new SchemaChangeResponse(true));
                 break;
             }

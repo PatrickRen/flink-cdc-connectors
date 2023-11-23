@@ -61,6 +61,7 @@ public class ValuesDataSourceHelper {
     private static List<List<Event>> sourceEvents;
 
     public static List<List<Event>> getSourceEvents() {
+        sourceEvents = singleSplitMultiTables();
         if (sourceEvents == null) {
             throw new IllegalArgumentException(
                     "sourceEvents should be set by `setSourceEvents` method.");

@@ -21,7 +21,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 
 import com.ververica.cdc.common.event.Event;
 import com.ververica.cdc.runtime.partitioning.EventPartitioner;
-import com.ververica.cdc.runtime.partitioning.PartitioningEvent;
+import com.ververica.cdc.runtime.partitioning.PartitioningEventKeySelector;
 import com.ververica.cdc.runtime.partitioning.PostPartitionProcessor;
 import com.ververica.cdc.runtime.partitioning.PrePartitionOperator;
 import com.ververica.cdc.runtime.typeutils.EventTypeInfo;
@@ -40,7 +40,7 @@ public class PartitioningTranslator {
                         new PartitioningEventTypeInfo(),
                         new PrePartitionOperator(schemaOperatorID, downstreamParallelism))
                 .setParallelism(upstreamParallelism)
-                .partitionCustom(new EventPartitioner(), PartitioningEvent::getTargetPartition)
+                .partitionCustom(new EventPartitioner(), new PartitioningEventKeySelector())
                 .map(new PostPartitionProcessor(), new EventTypeInfo());
     }
 }

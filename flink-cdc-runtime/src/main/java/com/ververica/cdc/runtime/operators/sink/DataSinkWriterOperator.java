@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.runtime.operators.sink;
+package com.ververica.cdc.runtime.operators.sink;
 
 import org.apache.flink.api.common.operators.MailboxExecutor;
 import org.apache.flink.api.connector.sink2.Sink;
-import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.state.StateInitializationContext;
 import org.apache.flink.streaming.api.graph.StreamConfig;
@@ -29,9 +28,6 @@ import org.apache.flink.streaming.runtime.tasks.StreamTask;
 
 import com.ververica.cdc.common.event.Event;
 import com.ververica.cdc.common.event.FlushEvent;
-import com.ververica.cdc.runtime.operators.sink.SchemaEvolutionClient;
-
-import java.lang.reflect.Field;
 
 /**
  * An operator that processes records to be written into a {@link
@@ -46,8 +42,6 @@ import java.lang.reflect.Field;
 public class DataSinkWriterOperator<CommT> extends SinkWriterOperator<Event, CommT> {
 
     private SchemaEvolutionClient schemaEvolutionClient;
-
-    private SinkWriter<Event> copySinkWriter;
 
     private final OperatorID schemaOperatorID;
 
@@ -72,28 +66,6 @@ public class DataSinkWriterOperator<CommT> extends SinkWriterOperator<Event, Com
     @Override
     public void open() throws Exception {
         super.open();
-        copySinkWriter = (SinkWriter) getFieldValue("sinkWriter");
-    }
-
-    /**
-     * Finds a field by name from its declaring class. This also searches for the field in super
-     * classes.
-     *
-     * @param fieldName the name of the field to find.
-     * @return the Object value of this field.
-     */
-    private Object getFieldValue(String fieldName) throws IllegalAccessException {
-        Class clazz = this.getClass();
-        while (clazz != null) {
-            try {
-                Field field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                return field.get(this);
-            } catch (NoSuchFieldException e) {
-                clazz = clazz.getSuperclass();
-            }
-        }
-        return null;
     }
 
     @Override
@@ -106,7 +78,7 @@ public class DataSinkWriterOperator<CommT> extends SinkWriterOperator<Event, Com
     public void processElement(StreamRecord<Event> element) throws Exception {
         Event event = element.getValue();
         if (event instanceof FlushEvent) {
-            copySinkWriter.flush(false);
+            sinkWriter.flush(false);
             schemaEvolutionClient.notifyFlushSuccess(
                     getRuntimeContext().getIndexOfThisSubtask(), ((FlushEvent) event).getTableId());
         } else {

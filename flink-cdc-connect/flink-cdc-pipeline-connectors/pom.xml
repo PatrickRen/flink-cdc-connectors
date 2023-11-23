@@ -41,13 +41,6 @@ under the License.
             <artifactId>flink-cdc-runtime</artifactId>
             <version>${revision}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.ververica</groupId>
-            <artifactId>flink-cdc-composer</artifactId>
-            <version>${revision}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>
