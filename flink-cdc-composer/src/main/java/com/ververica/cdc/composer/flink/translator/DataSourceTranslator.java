@@ -29,6 +29,7 @@ import com.ververica.cdc.common.source.EventSourceProvider;
 import com.ververica.cdc.common.source.FlinkSourceFunctionProvider;
 import com.ververica.cdc.common.source.FlinkSourceProvider;
 import com.ververica.cdc.composer.definition.SourceDef;
+import com.ververica.cdc.composer.flink.EnvironmentUtils;
 import com.ververica.cdc.composer.utils.FactoryDiscoveryUtils;
 import com.ververica.cdc.runtime.typeutils.EventTypeInfo;
 
@@ -51,6 +52,19 @@ public class DataSourceTranslator {
                                 sourceDef.getConfig().toMap(),
                                 new Configuration(),
                                 Thread.currentThread().getContextClassLoader()));
+
+        // Add source JAR to environment
+        try {
+            EnvironmentUtils.addJar(
+                    env,
+                    FactoryDiscoveryUtils.getJarPathByIdentifier(
+                            sourceDef.getType(), DataSourceFactory.class));
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    String.format(
+                            "Cannot add connector JAR for source \"%s\"", sourceDef.getType()),
+                    e);
+        }
 
         // Get source provider
         EventSourceProvider eventSourceProvider = dataSource.getEventSourceProvider();
