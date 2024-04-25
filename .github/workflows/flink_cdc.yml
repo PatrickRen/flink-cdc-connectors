@@ -29,6 +29,7 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'README.md'
+  workflow_dispatch:
 
 # Concurrency strategy:
 #   github.workflow: distinguish this workflow from others
